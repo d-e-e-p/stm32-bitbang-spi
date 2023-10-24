@@ -37,18 +37,19 @@ set (PROJECT_NAME             "slave")
 set (PROJECT_TYPE             "exe")
 set (LINKER_SCRIPT            "../STM32F407VGTX_FLASH.ld")
 set (MCPU                     "-mcpu=Cortex-M4")
-set (MFPU                 "-mfpu=fpv4-sp-d16")
+set (MFPU                     "-mfpu=fpv4-sp-d16")
 set (MFLOAT_ABI               "")
 set (RUNTIME_LIBRARY          "--specs=nano.specs")
 set (RUNTIME_LIBRARY_SYSCALLS "--specs=nosys.specs")
 
-# requires 'cmake .. --fresh' to pick up file add/drop
+# 'cmake .. --fresh' might be required to pick up file add/drop
 set (STM32CubeF4 /Users/deep/build/tf/STM32CubeF4)
 file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS 
     Core/Startup/startup_stm32f407vgtx.s
     Core/Src/*.c
     Core/Src/*.cpp
     USB_DEVICE/App/*.c
+    USB_DEVICE/Target/*.c
     ${STM32CubeF4}/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c
     ${STM32CubeF4}/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c
     ${STM32CubeF4}/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c
@@ -62,19 +63,26 @@ file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS
     ${STM32CubeF4}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c
     ${STM32CubeF4}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c
     ${STM32CubeF4}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c
+    ${STM32CubeF4}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd.c
+    ${STM32CubeF4}/Drivers/STM32F4xx_HAL_Driver/Src/Src/stm32f4xx_ll_usb.c
+    ${STM32CubeF4}/Drivers/STM32F4xx_HAL_Driver/Src/Src/stm32f4xx_hal_pcd_ex.c
 )
 
-#
-#set (PROJECT_SOURCES
-#	# LIST SOURCE FILES HERE
-#	Startup/startup_stm32f407vgtx.s
-#	Src/main.cpp
-#	Src/syscalls.c
-#	Src/sysmem.c
-#    ../USB_DEVICE/App/usb_device.c  
-#    ../USB_DEVICE/App/usbd_cdc_if.c  
-#    ../USB_DEVICE/App/usbd_desc.c
-#	)
+file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS 
+    Core/Startup/startup_stm32f407vgtx.s
+    Core/Src/*.c
+    Core/Src/*.cpp
+    USB_DEVICE/App/*.c
+    USB_DEVICE/Target/*.c
+    ${STM32CubeF4}/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c
+    ${STM32CubeF4}/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c
+    ${STM32CubeF4}/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c
+    ${STM32CubeF4}/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/*.c
+    ${STM32CubeF4}/Middlewares/ST/STM32_USB_Device_Library/Class/HID/Src/*.c
+    ${STM32CubeF4}/Drivers/STM32F4xx_HAL_Driver/Src/*.c
+)
+list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*_template.c$")
+
 
 set (PROJECT_DEFINES
 	# LIST COMPILER DEFINITIONS HERE
