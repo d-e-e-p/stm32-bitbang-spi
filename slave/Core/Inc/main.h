@@ -36,6 +36,8 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim4;
 
 /* USER CODE END ET */
 
@@ -52,9 +54,6 @@ extern "C" {
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
-/* USER CODE BEGIN EFP */
-
-/* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
 #define PH0_OSC_IN_Pin GPIO_PIN_0
@@ -65,14 +64,15 @@ void Error_Handler(void);
 #define PUSHBUTTON_GPIO_Port GPIOA
 #define BOOT1_Pin GPIO_PIN_2
 #define BOOT1_GPIO_Port GPIOB
+
+// LED
 #define LED_GREEN_Pin GPIO_PIN_12
-#define LED_GREEN_GPIO_Port GPIOD
 #define LED_ORANGE_Pin GPIO_PIN_13
-#define LED_ORANGE_GPIO_Port GPIOD
 #define LED_RED_Pin GPIO_PIN_14
-#define LED_RED_GPIO_Port GPIOD
 #define LED_BLUE_Pin GPIO_PIN_15
-#define LED_BLUE_GPIO_Port GPIOD
+#define LED_Port GPIOD
+
+// USB
 #define VBUS_FS_Pin GPIO_PIN_9
 #define VBUS_FS_GPIO_Port GPIOA
 #define OTG_FS_DM_Pin GPIO_PIN_11
@@ -82,9 +82,13 @@ void Error_Handler(void);
 #define OTG_FS_ID_Pin GPIO_PIN_10
 #define OTG_FS_ID_GPIO_Port GPIOA
 
-/* USER CODE BEGIN Private defines */
+// SPI
+#define SPI_NSS_Pin   GPIO_PIN_4  // PA4
+#define SPI_SCK_Pin   GPIO_PIN_5  // PA5
+#define SPI_MISO_Pin  GPIO_PIN_6  // PA6
+#define SPI_MOSI_Pin  GPIO_PIN_7  // PA7
+#define SPI_Port GPIOA
 
-/* USER CODE END Private defines */
 
 #ifdef __cplusplus
 }
