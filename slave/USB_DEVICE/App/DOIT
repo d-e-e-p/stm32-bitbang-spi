@@ -1,0 +1,3 @@
+#!/bin/bash -x
+cp usbd_cdc_if.h.mod usbd_cdc_if.h
+cp usbd_cdc_if.c.mod usbd_cdc_if.c
