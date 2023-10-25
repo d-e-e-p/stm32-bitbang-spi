@@ -181,44 +181,63 @@ void gpio_init(void) {
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     //GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    HAL_GPIO_Init(SPI_Port, &GPIO_InitStruct);
 
-    HAL_GPIO_DeInit(GPIOA, SPI_MISO_Pin);
+    HAL_GPIO_DeInit(SPI_Port, SPI_MISO_Pin);
 
     // Configure the MOSI pin as an output
     GPIO_InitStruct.Pin = SPI_MISO_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // MOSI as output
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    HAL_GPIO_Init(SPI_Port, &GPIO_InitStruct);
 }
+
+std::string get_bit_string(uint16_t value) {
+    std::string bitString;
+    for (int i = 7; i >= 0; --i) {
+        bitString += ((value >> i) & 1) ? '1' : '0';
+        if (i % 4 == 0)
+            bitString += ' ';
+    }
+    return bitString;
+}
+
 
 // utilities 
 bool sck_is_low() {
-  return (HAL_GPIO_ReadPin(GPIOA, SPI_SCK_Pin) == GPIO_PIN_RESET);
+  return (HAL_GPIO_ReadPin(SPI_Port, SPI_SCK_Pin) == GPIO_PIN_RESET);
 }
 
 bool sck_is_high() {
-  return (HAL_GPIO_ReadPin(GPIOA, SPI_SCK_Pin) == GPIO_PIN_SET);
+  return (HAL_GPIO_ReadPin(SPI_Port, SPI_SCK_Pin) == GPIO_PIN_SET);
 }
 
 bool nss_is_low() {
-  return (HAL_GPIO_ReadPin(GPIOA, SPI_NSS_Pin) == GPIO_PIN_RESET);
+  return (HAL_GPIO_ReadPin(SPI_Port, SPI_NSS_Pin) == GPIO_PIN_RESET);
 }
 
 bool nss_is_high() {
-  return (HAL_GPIO_ReadPin(GPIOA, SPI_NSS_Pin) == GPIO_PIN_SET);
+  return (HAL_GPIO_ReadPin(SPI_Port, SPI_NSS_Pin) == GPIO_PIN_SET);
 }
 
 void set_miso(bool txd_bit) {
   GPIO_PinState txd_val = txd_bit ? GPIO_PIN_SET : GPIO_PIN_RESET;
-  HAL_GPIO_WritePin(GPIOA, SPI_MISO_Pin, txd_val);
+  HAL_GPIO_WritePin(SPI_Port, SPI_MISO_Pin, txd_val);
 }
 
 bool get_mosi() {
-  return (HAL_GPIO_ReadPin(GPIOA, SPI_MOSI_Pin) == GPIO_PIN_SET);
+  return (HAL_GPIO_ReadPin(SPI_Port, SPI_MOSI_Pin) == GPIO_PIN_SET);
 }
 
+constexpr uint8_t txd_er1 = 0xEE;
+constexpr uint8_t txd_er2 = 0xDD;
+//constexpr uint8_t txd_er3 = 0xCC;
+
+constexpr int bpw = 8; // bits per word
+constexpr int bpwm1 = bpw - 1; // bits per word minus 1
+      
+constexpr int nss_glitch_counter = 10;
 
 // Function to exchange data using bit-banging SPI
 uint8_t spi_transmit_receive(uint8_t txd_byt) {
@@ -226,8 +245,10 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
     int bit;
     bool txd_bit;
 
+    bool sck_val, nss_val;
+
     // set the first bit of transmit
-    bit = 7;
+    bit = bpwm1;
     txd_bit = txd_byt & (1 << bit);
     set_miso(txd_bit);
 
@@ -235,39 +256,150 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
     while (nss_is_high()) {
     }
 
-    for (bit = 7; bit >= 0; --bit) {
+    for (bit = bpwm1; bit >= 0; --bit) {
+
         // Wait for the rising edge of clock
+        do {
+          // Read the value of GPIOA->IDR and check the state of the pins
+          __disable_irq();
+          uint32_t gpio = GPIOA->IDR;
+          __enable_irq();
+
+          sck_val = gpio & SPI_SCK_Pin;
+          nss_val = gpio & SPI_NSS_Pin;
+          if (nss_val && (bit < bpwm1)) {
+            //uprintf("error bit = %d\r\n", bit);
+            return txd_er1;
+          }
+
+        } while (!sck_val);
+    /*
+    int cnt = 0;
         while (sck_is_low()) {
-          // handle nss going high here
-          //if (nss_is_high()) {
-           // return 0xEE;
-          //}
+          std::cout << " gpioa = 0b" <<  get_bit_string(GPIOA->IDR) << "n";
+          // handle slave getting unselected 
+          if ((bit < bpwm1) && nss_is_high()) {
+            cnt++;
+            uprintf("val = %d\r\n", (GPIOA->IDR & SPI_NSS_Pin));
+            uprintf("val = %d\r\n", (GPIOA->IDR & GPIO_PIN_4));
+            uprintf("bit %d nss has gone %d at %d waiting for posedge(sck), so returning %02x \r\n", bit, nss_is_high(), cnt, txd_er1);
+            if (cnt > nss_glitch_counter) {
+              uprintf("bit %d nss has gone high at %d waiting for posedge(sck), so returning %02x \r\n", bit, cnt, txd_er1);
+              HAL_GPIO_TogglePin(LED_Port, LED_ORANGE_Pin);
+              return txd_er1;
+            }
+          }
         }
+        */
 
         // sample MOSI (PA7) when the clock goes high
-        rxd_byt |= (HAL_GPIO_ReadPin(GPIOA, SPI_MOSI_Pin) << bit);
+        rxd_byt |= (HAL_GPIO_ReadPin(SPI_Port, SPI_MOSI_Pin) << bit);
 
         // Now wait for the falling edge of clock
         while (sck_is_high()) {
-          // handle nss going high here
-          //if ((bit > 0) & nss_is_high()) {
-           // return 0xEE;
-          //}
+          // handle slave getting unselected 
+          if ((bit > 0) && nss_is_high()) {
+            uprintf("bit %d nss has gone high waiting for negdge(sck), so returning %02x \r\n", bit, txd_er1);
+            HAL_GPIO_TogglePin(LED_Port, LED_RED_Pin);
+            return txd_er2;
+          }
         }
 
         if (bit > 0) {
           // Set MISO (PA6) based on the data bit
           txd_bit = txd_byt & (1 << (bit - 1));
           set_miso(txd_bit);
-          //uprintf("bit %d txd %02x \r\n", bit, txd_byt);
         }
-        // handle nss going high here
     }
 
-    return rxd_byt;
+  return rxd_byt;
 }
 
 
+uint8_t debug(uint8_t txd_byt) {
+
+ int cnt = 0;
+ while (nss_is_high()) {
+   cnt++;
+   if (cnt % 10000000 == 0) {
+       std::cout << " nss_is_high: " << cnt << "  gpioa = 0b" <<  get_bit_string(GPIOA->IDR) << "\n";
+   }
+  }
+
+
+  uint32_t last_state {};
+  while (true) {
+    uint32_t gpio = GPIOA->IDR;
+    bool sck_bit = gpio & SPI_SCK_Pin;
+    bool nss_bit = gpio & SPI_NSS_Pin;
+    uint32_t this_state = gpio & (SPI_SCK_Pin | SPI_NSS_Pin);
+    if (this_state != last_state) {
+      uprintf(" sck_bit = %d nss_bit = %d \r\n", sck_bit, nss_bit);
+    }
+    last_state = this_state;
+  }
+
+    return 1;
+}
+
+// Function to exchange data using bit-banging SPI
+uint8_t spi_transmit_receive_debug(uint8_t txd_byt) {
+    uint8_t rxd_byt = 0;
+    int bit;
+    bool txd_bit;
+    int cnt = 0;
+
+    // set the first bit of transmit
+    bit = bpwm1;
+    txd_bit = txd_byt & (1 << bit);
+    set_miso(false);
+
+    //  while (true) { set_miso( nss_is_high() && sck_is_low()) ; }
+
+    // Wait for the NSS (Slave Select) pin to go low
+    while (nss_is_high()) {
+    }
+
+    for (bit = bpwm1; bit >= 0; --bit) {
+        cnt = 0;
+        // Wait for the rising edge of clock
+        while (sck_is_low()) {
+          //uprintf("bit %d nss = %d sck = %d\r\n", bit, HAL_GPIO_ReadPin(SPI_Port, SPI_NSS_Pin), HAL_GPIO_ReadPin(SPI_Port, SPI_SCK_Pin));
+          // handle slave getting unselected 
+          if (nss_is_high()) {
+            cnt++;
+          }
+          std::cout << " sck_is_low: bit:" << bit << " cnt:" << cnt << " gpioa = 0b" <<  get_bit_string(GPIOA->IDR) << "\n";
+          if (cnt > 10) {
+            HAL_Delay(1000);
+          }
+          set_miso(cnt > 10);
+        }
+        cnt = 0;
+        set_miso(false);
+
+        // sample MOSI (PA7) when the clock goes high
+        rxd_byt |= (HAL_GPIO_ReadPin(SPI_Port, SPI_MOSI_Pin) << bit);
+
+        // Now wait for the falling edge of clock
+        while (sck_is_high()) {
+          // handle slave getting unselected 
+          if ((bit > 0) && nss_is_high()) {
+            uprintf("bit %d nss has gone high waiting for negdge(sck), so returning %02x \r\n", bit, txd_er1);
+            HAL_GPIO_TogglePin(LED_Port, LED_RED_Pin);
+            return txd_er2;
+          }
+        }
+
+        if (bit > 0) {
+          // Set MISO (PA6) based on the data bit
+          txd_bit = txd_byt & (1 << (bit - 1));
+          set_miso(txd_bit);
+        }
+    }
+
+  return rxd_byt;
+}
 
 
 //
@@ -278,17 +410,10 @@ void bitbang_spi_slave() {
   gpio_init();
   dump_spi1_gpio_info();
   uint8_t rxd, txd {};
-  uprintf("starting bitbang_spi_slave: \r\n");
-  /*
-  while(true) {
-    set_miso(true); HAL_Delay(100);
-    set_miso(false); HAL_Delay(100);
-  }
-  */
-  HAL_Delay(1000);
+  //while(true) { HAL_GPIO_TogglePin(SPI_Port, SPI_MISO_Pin); HAL_Delay(100); }
   while (true) {
     rxd = spi_transmit_receive(txd);
-    uprintf("bb: tx=%02x rx=%02x\r\n", txd, rxd);
+    //uprintf("bb2: tx=%02x rx=%02x\r\n", txd, rxd);
     txd = rxd;
   }
   

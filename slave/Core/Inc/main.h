@@ -56,20 +56,24 @@ void Error_Handler(void);
 
 
 /* Private defines -----------------------------------------------------------*/
+
+// OSC
 #define PH0_OSC_IN_Pin GPIO_PIN_0
 #define PH0_OSC_IN_GPIO_Port GPIOH
 #define PH1_OSC_OUT_Pin GPIO_PIN_1
 #define PH1_OSC_OUT_GPIO_Port GPIOH
+
+// PUSHBUTTON and BOOT
 #define PUSHBUTTON_Pin GPIO_PIN_0
 #define PUSHBUTTON_GPIO_Port GPIOA
 #define BOOT1_Pin GPIO_PIN_2
 #define BOOT1_GPIO_Port GPIOB
 
 // LED
-#define LED_GREEN_Pin GPIO_PIN_12
-#define LED_ORANGE_Pin GPIO_PIN_13
-#define LED_RED_Pin GPIO_PIN_14
-#define LED_BLUE_Pin GPIO_PIN_15
+#define LED_GREEN_Pin   GPIO_PIN_12
+#define LED_ORANGE_Pin  GPIO_PIN_13
+#define LED_RED_Pin     GPIO_PIN_14
+#define LED_BLUE_Pin    GPIO_PIN_15
 #define LED_Port GPIOD
 
 // USB
