@@ -280,19 +280,14 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
         // Wait for the rising edge of clock
         do {
           // Read the value of GPIOA->IDR and check the state of the pins
-          __disable_irq();
-          uint32_t gpio = GPIOA->IDR;
-          __enable_irq();
-
-          sck_val = gpio & SPI_SCK_Pin;
-          nss_val = gpio & SPI_NSS_Pin;
-          if (nss_val && (bit < bpwm1)) {
+          get_spi_pin_vals();
+          if (val.nss && (bit < bpwm1)) {
             // uprintf("bit %d nss has gone high waiting for posedge(sck), so returning %02x \r\n", bit, txd_er1);
             HAL_GPIO_TogglePin(LED_Port, LED_ORANGE_Pin);
             return txd_er1;
           }
 
-        } while (!sck_val);
+        } while (!val.sck);
 
         // sample MOSI (PA7) when the clock goes high
         rxd_byt |= (HAL_GPIO_ReadPin(SPI_Port, SPI_MOSI_Pin) << bit);
