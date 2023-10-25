@@ -234,30 +234,17 @@ constexpr uint8_t txd_er1 = 0xEE;
 constexpr uint8_t txd_er2 = 0xDD;
 //constexpr uint8_t txd_er3 = 0xCC;
 
-constexpr int bpw = 8; // bits per word
-constexpr int bpwm1 = bpw - 1; // bits per word minus 1
+constexpr int data_size = 8; // bits per word
+constexpr int data_size_minus1 = data_size - 1; // bits per word minus 1
       
-constexpr int nss_glitch_counter = 10;
-
 struct pinVal {
     bool nss;
     bool sck;
     bool mosi;
 } val;
 
-void get_spi_pin_vals() {
 
-  __disable_irq();
-  uint32_t gpio = GPIOA->IDR;
-  __enable_irq();
-
-  val.sck  = gpio & SPI_SCK_Pin;
-  val.nss  = gpio & SPI_NSS_Pin;
-  val.mosi = gpio & SPI_MOSI_Pin;
-
-}
-
-pinVal get_spi_pin_vals2() {
+pinVal get_spi_pin_vals() {
 
   __disable_irq();
   uint32_t gpio = GPIOA->IDR;
@@ -277,11 +264,10 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
     int bit;
     bool txd_bit;
 
-    //bool sck_val, nss_val, mosi_val;
-    pinVal val2;
+    pinVal val;
 
-    // set the first bit of transmit
-    bit = bpwm1;
+    // set the first bit of transmit way before anything
+    bit = data_size_minus1;
     txd_bit = txd_byt & (1 << bit);
     set_miso(txd_bit);
 
@@ -289,13 +275,13 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
     while (nss_is_high()) {
     }
 
-    for (bit = bpwm1; bit >= 0; --bit) {
+    for (bit = data_size_minus1; bit >= 0; --bit) {
 
         // Wait for the rising edge of clock
         do {
           // Read the value of GPIOA->IDR and check the state of the pins
-          get_spi_pin_vals();
-          if (val.nss && (bit < bpwm1)) {
+          val = get_spi_pin_vals();
+          if (val.nss && (bit < data_size_minus1)) {
             // uprintf("bit %d nss has gone high waiting for posedge(sck), so returning %02x \r\n", bit, txd_er1);
             HAL_GPIO_TogglePin(LED_Port, LED_ORANGE_Pin);
             return txd_er1;
@@ -304,23 +290,20 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
         } while (!val.sck);
 
         // sample MOSI (PA7) when the clock goes high
-        rxd_byt |= (HAL_GPIO_ReadPin(SPI_Port, SPI_MOSI_Pin) << bit);
+        rxd_byt |= (val.mosi << bit);
 
         // Now wait for the falling edge of clock
         do {
           // Read the value of GPIOA->IDR and check the state of the pins
-          val2 = get_spi_pin_vals2();
-          //__disable_irq();
-          //uint32_t gpio = GPIOA->IDR;
-          //__enable_irq();
+          val = get_spi_pin_vals();
 
-          if (val2.nss && (bit > 0)) {
+          if (val.nss && (bit > 0)) {
             // uprintf("bit %d nss has gone high waiting for negdge(sck), so returning %02x \r\n", bit, txd_er2);
             HAL_GPIO_TogglePin(LED_Port, LED_RED_Pin);
             return txd_er2;
           }
 
-        } while (val2.sck);
+        } while (val.sck);
 
 
         if (bit > 0) {
