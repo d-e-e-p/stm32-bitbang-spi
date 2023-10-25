@@ -257,6 +257,19 @@ void get_spi_pin_vals() {
 
 }
 
+pinVal get_spi_pin_vals2() {
+
+  __disable_irq();
+  uint32_t gpio = GPIOA->IDR;
+  __enable_irq();
+
+  pinVal val;
+  val.sck  = gpio & SPI_SCK_Pin;
+  val.nss  = gpio & SPI_NSS_Pin;
+  val.mosi = gpio & SPI_MOSI_Pin;
+
+  return val;
+}
 
 // Function to exchange data using bit-banging SPI
 uint8_t spi_transmit_receive(uint8_t txd_byt) {
@@ -295,12 +308,13 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
         // Now wait for the falling edge of clock
         do {
           // Read the value of GPIOA->IDR and check the state of the pins
-          __disable_irq();
-          uint32_t gpio = GPIOA->IDR;
-          __enable_irq();
+          auto val2 = get_spi_pin_vals2();
+          //__disable_irq();
+          //uint32_t gpio = GPIOA->IDR;
+          //__enable_irq();
 
-          sck_val = gpio & SPI_SCK_Pin;
-          nss_val = gpio & SPI_NSS_Pin;
+          sck_val = val2.sck;
+          nss_val = val2.nss;
           if (nss_val && (bit > 0)) {
             // uprintf("bit %d nss has gone high waiting for negdge(sck), so returning %02x \r\n", bit, txd_er2);
             HAL_GPIO_TogglePin(LED_Port, LED_RED_Pin);
@@ -346,65 +360,6 @@ uint8_t debug(uint8_t txd_byt) {
   }
 
     return 1;
-}
-
-// Function to exchange data using bit-banging SPI
-uint8_t spi_transmit_receive_debug(uint8_t txd_byt) {
-    uint8_t rxd_byt = 0;
-    int bit;
-    bool txd_bit;
-    int cnt = 0;
-
-    // set the first bit of transmit
-    bit = bpwm1;
-    txd_bit = txd_byt & (1 << bit);
-    set_miso(false);
-
-    //  while (true) { set_miso( nss_is_high() && sck_is_low()) ; }
-
-    // Wait for the NSS (Slave Select) pin to go low
-    while (nss_is_high()) {
-    }
-
-    for (bit = bpwm1; bit >= 0; --bit) {
-        cnt = 0;
-        // Wait for the rising edge of clock
-        while (sck_is_low()) {
-          //uprintf("bit %d nss = %d sck = %d\r\n", bit, HAL_GPIO_ReadPin(SPI_Port, SPI_NSS_Pin), HAL_GPIO_ReadPin(SPI_Port, SPI_SCK_Pin));
-          // handle slave getting unselected 
-          if (nss_is_high()) {
-            cnt++;
-          }
-          std::cout << " sck_is_low: bit:" << bit << " cnt:" << cnt << " gpioa = 0b" <<  get_bit_string(GPIOA->IDR) << "\n";
-          if (cnt > 10) {
-            HAL_Delay(1000);
-          }
-          set_miso(cnt > 10);
-        }
-        cnt = 0;
-        set_miso(false);
-
-        // sample MOSI (PA7) when the clock goes high
-        rxd_byt |= (HAL_GPIO_ReadPin(SPI_Port, SPI_MOSI_Pin) << bit);
-
-        // Now wait for the falling edge of clock
-        while (sck_is_high()) {
-          // handle slave getting unselected 
-          if ((bit > 0) && nss_is_high()) {
-            uprintf("bit %d nss has gone high waiting for negdge(sck), so returning %02x \r\n", bit, txd_er1);
-            HAL_GPIO_TogglePin(LED_Port, LED_RED_Pin);
-            return txd_er2;
-          }
-        }
-
-        if (bit > 0) {
-          // Set MISO (PA6) based on the data bit
-          txd_bit = txd_byt & (1 << (bit - 1));
-          set_miso(txd_bit);
-        }
-    }
-
-  return rxd_byt;
 }
 
 
