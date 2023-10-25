@@ -277,7 +277,8 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
     int bit;
     bool txd_bit;
 
-    bool sck_val, nss_val, mosi_val;
+    //bool sck_val, nss_val, mosi_val;
+    pinVal val2;
 
     // set the first bit of transmit
     bit = bpwm1;
@@ -308,22 +309,19 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
         // Now wait for the falling edge of clock
         do {
           // Read the value of GPIOA->IDR and check the state of the pins
-          auto val2 = get_spi_pin_vals2();
+          val2 = get_spi_pin_vals2();
           //__disable_irq();
           //uint32_t gpio = GPIOA->IDR;
           //__enable_irq();
 
-          sck_val = val2.sck;
-          nss_val = val2.nss;
-          if (nss_val && (bit > 0)) {
+          if (val2.nss && (bit > 0)) {
             // uprintf("bit %d nss has gone high waiting for negdge(sck), so returning %02x \r\n", bit, txd_er2);
             HAL_GPIO_TogglePin(LED_Port, LED_RED_Pin);
             return txd_er2;
           }
 
-        } while (sck_val);
+        } while (val2.sck);
 
-        UNUSED(mosi_val);
 
         if (bit > 0) {
           // Set MISO (PA6) based on the data bit
