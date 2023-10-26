@@ -234,8 +234,7 @@ constexpr uint8_t txd_er1 = 0xEE;
 constexpr uint8_t txd_er2 = 0xDD;
 //constexpr uint8_t txd_er3 = 0xCC;
 
-constexpr int data_size = 8; // bits per word
-constexpr int data_size_minus1 = data_size - 1; // bits per word minus 1
+constexpr int bits_per_word = 8; // bits per word
       
 struct pinVal {
     bool nss;
@@ -267,7 +266,7 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
     pinVal val;
 
     // set the first bit of transmit way before anything
-    bit = data_size_minus1;
+    bit = bits_per_word-1;
     txd_bit = txd_byt & (1 << bit);
     set_miso(txd_bit);
 
@@ -275,13 +274,13 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
     while (nss_is_high()) {
     }
 
-    for (bit = data_size_minus1; bit >= 0; --bit) {
+    for (bit = bits_per_word-1; bit >= 0; --bit) {
 
         // Wait for the rising edge of clock
         do {
           // Read the value of GPIOA->IDR and check the state of the pins
           val = get_spi_pin_vals();
-          if (val.nss && (bit < data_size_minus1)) {
+          if (val.nss && (bit < bits_per_word-1)) {
             // uprintf("bit %d nss has gone high waiting for posedge(sck), so returning %02x \r\n", bit, txd_er1);
             HAL_GPIO_TogglePin(LED_Port, LED_ORANGE_Pin);
             return txd_er1;
