@@ -33,9 +33,10 @@ debug:
 
 
 release: 
-	cmake --fresh -S . -B Release -DCMAKE_TOOLCHAIN_FILE=cubeide-gcc.cmake -DCMAKE_BUILD_TYPE=Release
+	cmake -S . -B Release -DCMAKE_TOOLCHAIN_FILE=cubeide-gcc.cmake -DCMAKE_BUILD_TYPE=Release
 	cmake --build Release --config Release 
-	STM32_Programmer_CLI -c port=SWD freq=4000 -w Release/slave.elf -rst
+	STM32_Programmer_CLI --connect port=SWD freq=4000 mode=UR reset=HWrst --write Release/slave.elf 
+	STM32_Programmer_CLI --connect port=SWD reset=HWrst
 
 docs: ## generate Doxygen HTML documentation, including API docs
 	rm -rf ./build/docs/CMakeCache.txt
