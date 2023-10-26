@@ -1,3 +1,18 @@
+/*
+ *
+ * bitbang slave spi receiver for stm32f4
+ * https://github.com/d-e-e-p/stm32-bitbang-spi/
+ *
+ * (c) 2023 deep@tensorfield.ag
+ *
+ * Assumes SPI mode 1 (SPI_POLARITY_LOW + SPI_PHASE_1EDGE) and SPI_NSS_HARD_INPUT
+ * NSS is used as a byte separator: if this signal goes high in the middle of processing a word, 
+ * then an error is returned and receive/transmit buffer is flushed.  This means that a single
+ * missed or extra bit error is contained and doesn't cause a long ripple effect of cascading
+ * errors.
+ *
+ */
+
 
 #include <algorithm>
 
@@ -234,7 +249,8 @@ constexpr uint8_t txd_er1 = 0xEE;
 constexpr uint8_t txd_er2 = 0xDD;
 //constexpr uint8_t txd_er3 = 0xCC;
 
-constexpr int bits_per_word = 8; // bits per word
+// (containers have to be changed if bits_per_word is increased)
+constexpr int bits_per_word = 8; // SPI_DATASIZE_8BIT
       
 struct pinVal {
     bool nss;
@@ -243,6 +259,10 @@ struct pinVal {
 } val;
 
 
+// 
+// use a single register read to get {sck/nss/mosi} values instead of 3 separate calls..
+// TODO: replace GPIOA with SPI_PORT
+//
 pinVal get_spi_pin_vals() {
 
   __disable_irq();
@@ -257,7 +277,9 @@ pinVal get_spi_pin_vals() {
   return val;
 }
 
-// Function to exchange data using bit-banging SPI
+//
+// main body : exchange data using bit-banging SPI
+// 
 uint8_t spi_transmit_receive(uint8_t txd_byt) {
     uint8_t rxd_byt = 0;
     int bit;
@@ -268,7 +290,7 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
     // set the first bit of transmit way before anything
     bit = bits_per_word-1;
     txd_bit = txd_byt & (1 << bit);
-    set_miso(txd_bit);
+    set_miso(txd_bit); // preload miso with next bit even before slave select
 
     // Wait for the NSS (Slave Select) pin to go low
     while (nss_is_high()) {
@@ -278,7 +300,7 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
 
         // Wait for the rising edge of clock
         do {
-          // Read the value of GPIOA->IDR and check the state of the pins
+          // Read the value of GPIOA->IDR and check the state of nss/sck and mosi
           val = get_spi_pin_vals();
           if (val.nss && (bit < bits_per_word-1)) {
             // uprintf("bit %d nss has gone high waiting for posedge(sck), so returning %02x \r\n", bit, txd_er1);
@@ -288,7 +310,7 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
 
         } while (!val.sck);
 
-        // sample MOSI (PA7) when the clock goes high
+        // reuse MOSI (PA7) sample from last read when clock went high
         rxd_byt |= (val.mosi << bit);
 
         // Now wait for the falling edge of clock
@@ -315,7 +337,8 @@ uint8_t spi_transmit_receive(uint8_t txd_byt) {
   return rxd_byt;
 }
 
-
+// trace all state changes
+// TODO: use get_spi_pin_vals
 uint8_t debug(uint8_t txd_byt) {
 
  int cnt = 0;
