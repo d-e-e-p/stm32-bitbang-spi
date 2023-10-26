@@ -24,7 +24,7 @@ cmake configuration files drive either cli or gui build.
 
 To build using gui, first download:
 
-    [https://www.st.com/en/development-tools/stm32cubeide.html](https://www.st.com/en/development-tools/stm32cubeide.html)
+    https://www.st.com/en/development-tools/stm32cubeide.html
 
 Then checkout STM32CubeF4:
 
@@ -41,7 +41,7 @@ You should then be able to select "Run" to build code and flash to target board.
 ### CLI 
 To use cli, in addition to steps above also download:
 
-    [https://www.st.com/en/development-tools/stm32cubeclt.html](https://www.st.com/en/development-tools/stm32cubeclt.html)
+    https://www.st.com/en/development-tools/stm32cubeclt.html
 
 Then update the PATH variable in Makefile to point to the equivalent of these 3 directories under stm32cubeide and stm32cubeclt install dirs:
 
