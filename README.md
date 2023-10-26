@@ -20,26 +20,28 @@ This implementation can be used to:
 
 cmake configuration files drive either cli or gui build.
 
-# GUI 
+### GUI 
 
 To build using gui, first download:
 
-    https://www.st.com/en/development-tools/stm32cubeide.html
+    [https://www.st.com/en/development-tools/stm32cubeide.html](https://www.st.com/en/development-tools/stm32cubeide.html)
 
 Then checkout STM32CubeF4:
 
+```bash
     cd /somewhere/to/store/repository/
     git clone https://github.com/STMicroelectronics/STM32CubeF4.git
+```
 
 Update the STM32CubeF4 line in CMakeLists.txt to point to this location.
 
 Open project at stm32-bitbang-spi level and import project "slave" into your environment.
 You should then be able to select "Run" to build code and flash to target board.
 
-# CLI 
+### CLI 
 To use cli, in addition to steps above also download:
 
-    https://www.st.com/en/development-tools/stm32cubeclt.html
+    [https://www.st.com/en/development-tools/stm32cubeclt.html](https://www.st.com/en/development-tools/stm32cubeclt.html)
 
 Then update the PATH variable in Makefile to point to the equivalent of these 3 directories under stm32cubeide and stm32cubeclt install dirs:
 
@@ -112,7 +114,7 @@ Makefile has the cmake commands to build and flash the target board.
 │   │   │   ├── main.h
 │   │   │   ├── output.hpp
 │   │   │   ├── queue.hpp
-│   │   │   ├── spi.hpp
+│   │   │   ├── spi.hpp   <-- spi driver lives here
 │   │   │   ├── stm32_assert.h
 │   │   │   ├── stm32f4xx_hal_conf.h
 │   │   │   └── stm32f4xx_it.h
@@ -135,15 +137,6 @@ Makefile has the cmake commands to build and flash the target board.
 ### Coding style
 
 
-.clang-format for this code looks like
-```bash
-Language:        Cpp
-BasedOnStyle:  Google
-AllowShortBlocksOnASingleLine: true
-AllowShortIfStatementsOnASingleLine: true
-ColumnLimit:     80
-BreakBeforeBraces: Stroustrup
-```
 Roughly following https://google.github.io/styleguide/cppguide.html except 
 in this case all functions and variables are snake_case.
 
