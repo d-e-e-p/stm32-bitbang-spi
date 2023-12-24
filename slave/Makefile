@@ -11,13 +11,19 @@ export CMAKE_BUILD_PARALLEL_LEVEL:= 4
 export CMAKE_GENERATOR:=Ninja
 export CMAKE_VERBOSE_MAKEFILE:=ON
 export CMAKE_TOOLCHAIN_FILE=cubeide-gcc.cmake
-export PATH:=/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.11.3.rel1.macos64_1.1.1.202309131626/tools/bin:/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.make.macos64_2.1.0.202305091550/tools/bin:/Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/com.st.stm32cube.ide.mcu.externaltools.cubeprogrammer.macos64_2.1.0.202305091550/tools/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin
+# see https://stackoverflow.com/questions/10571658/gnu-make-convert-spaces-to-colons
+EXECUTABLES := $(wildcard /Applications/STM32CubeIDE.app/Contents/Eclipse/plugins/*/tools/bin)
+space := $(subst ,, )
+EPATH := $(subst $(space),:,$(EXECUTABLES))
+export PATH:=$(EPATH):$(PATH)
+
 #SHELL=/bin/bash -vx # for debug
 
 
 help: ## this message
 	@echo "make targets are: clean debug release, eg:"
 	@echo "	make release"
+	@echo PATH = $(PATH)
 
 all: clean debug release
 

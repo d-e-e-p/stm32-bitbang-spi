@@ -13,7 +13,7 @@ SPI using bitbang GPIO for stm32f4
 This implementation can be used to:
 - Compare with hardware SPI to isolate problems
 - Used by processors that don't have hardware SPI
-- Support parameters outside hardware implementation, eg 32-bit data size
+- Support features not covered by hardware implementation, eg 32-bit data size or byte-separation based on slave select.
 - Used when bitbang version achieves faster speeds than hardware version
 
 ## Getting Started

@@ -266,7 +266,7 @@ struct pinVal {
 pinVal get_spi_pin_vals() {
 
   __disable_irq();
-  uint32_t gpio = GPIOA->IDR;
+  uint32_t gpio = SPI_Port->IDR;
   __enable_irq();
 
   pinVal val;
@@ -345,14 +345,14 @@ uint8_t debug(uint8_t txd_byt) {
  while (nss_is_high()) {
    cnt++;
    if (cnt % 10000000 == 0) {
-       std::cout << " nss_is_high: " << cnt << "  gpioa = 0b" <<  get_bit_string(GPIOA->IDR) << "\n";
+       std::cout << " nss_is_high: " << cnt << "  gpioa = 0b" <<  get_bit_string(SPI_Port->IDR) << "\n";
    }
   }
 
 
   uint32_t last_state {};
   while (true) {
-    uint32_t gpio = GPIOA->IDR;
+    uint32_t gpio = SPI_Port->IDR;
     bool sck_bit = gpio & SPI_SCK_Pin;
     bool nss_bit = gpio & SPI_NSS_Pin;
     uint32_t this_state = gpio & (SPI_SCK_Pin | SPI_NSS_Pin);
