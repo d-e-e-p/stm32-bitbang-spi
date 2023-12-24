@@ -87,19 +87,11 @@ void Error_Handler(void);
 #define OTG_FS_ID_GPIO_Port GPIOA
 
 // SPI
-/*
 #define SPI_NSS_Pin   GPIO_PIN_4  // PA4
 #define SPI_SCK_Pin   GPIO_PIN_5  // PA5
 #define SPI_MISO_Pin  GPIO_PIN_6  // PA6
 #define SPI_MOSI_Pin  GPIO_PIN_7  // PA7
 #define SPI_Port GPIOA
-*/
-
-#define SPI_NSS_Pin   GPIO_PIN_7  // PA4
-#define SPI_SCK_Pin   GPIO_PIN_3  // PA5
-#define SPI_MISO_Pin  GPIO_PIN_4  // PA6
-#define SPI_MOSI_Pin  GPIO_PIN_5  // PA7
-#define SPI_Port GPIOB
 
 #ifdef __cplusplus
 }

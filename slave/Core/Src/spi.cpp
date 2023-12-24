@@ -374,7 +374,13 @@ void bitbang_spi_slave() {
   gpio_init();
   dump_spi1_gpio_info();
   uint8_t rxd, txd {};
-  //while(true) { HAL_GPIO_TogglePin(SPI_Port, SPI_MISO_Pin); HAL_Delay(100); }
+  /*
+  while(true) { 
+    HAL_GPIO_TogglePin(SPI_Port, SPI_MISO_Pin); 
+    HAL_GPIO_TogglePin(LED_Port, LED_RED_Pin);
+    HAL_Delay(100); 
+  }
+  */
   while (true) {
     rxd = spi_transmit_receive(txd);
     //uprintf("bb2: tx=%02x rx=%02x\r\n", txd, rxd);
